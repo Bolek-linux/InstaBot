@@ -44,7 +44,6 @@ async def set_login_handler(client: PyrogramClient, message: Message):
         await message.reply_text(f"✅ Instagram username has been set to: `{username}`.")
 
         if "password" in shared_state.ig_credentials and shared_state.ig_credentials["password"]:
-            # print('logging')
             await initialize_instagram_client(message)
         else:
             await message.reply_text("Now, please set the password using `/setpassword <password>`.")
@@ -62,7 +61,6 @@ async def set_password_handler(client: PyrogramClient, message: Message):
         confirmation_msg = await message.reply_text("✅ Instagram password has been set. Your message with the password will be deleted shortly.")
 
         if "username" in shared_state.ig_credentials and shared_state.ig_credentials["username"]:
-            # print('logging')
             await initialize_instagram_client(confirmation_msg)
         else:
             await confirmation_msg.reply_text("Now, please set the username using `/setlogin <username>`.")
@@ -77,8 +75,6 @@ async def login_command_handler(client: PyrogramClient, message: Message):
     """Manually triggers the login process."""
     if "username" in shared_state.ig_credentials and "password" in shared_state.ig_credentials:
         await initialize_instagram_client(message)
-        # print('logging')
-        print(shared_state.ig_credentials)
     else:
         await message.reply_text(
             "❌ **Cannot log in:** Credentials are not set.\n\n"
