@@ -21,6 +21,8 @@ if __name__ == "__main__":
     # Load credentials if they exist, but do not attempt to log in on startup.
     # Login is now an on-demand action triggered by the user in Telegram.
     load_credentials()
+
+    # Login to Instagram
     startup_login()
 
     print("[Pyrogram] Starting the bot...")
