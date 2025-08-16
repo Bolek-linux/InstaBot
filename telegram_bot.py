@@ -131,7 +131,8 @@ async def message_handler(client: PyrogramClient, message: Message):
             if result["live"]:
                 response_text = (f"✅ **Yes, `{username}` is now live!**"
                                  f"\n\n**Broadcast ID:** `{result['broadcast_id']}`"
-                                 f"\n\n**Link to the MPD manifest:**\n`{result['mpd_url']}`")
+                                 f"\n\n**Link to the MPD manifest:**\n`{result['mpd_url']}`"
+                                 f"\n\n**Record command:**\n`streamlink \"{result['mpd_url']}\" best --stdout | ffmpeg -i pipe:0 -c copy {result['broadcast_id']}.mp4`")
             else:
                 response_text = f"❌ **No, `{username}` is not live streaming.**"
         else:
