@@ -8,7 +8,7 @@ import sys
 
 # --- Local Imports ---
 from config import API_ID, API_HASH, BOT_TOKEN
-from instagram_handler import load_credentials
+from instagram_handler import load_credentials, startup_login
 from telegram_bot import app, idle
 
 if __name__ == "__main__":
@@ -21,6 +21,7 @@ if __name__ == "__main__":
     # Load credentials if they exist, but do not attempt to log in on startup.
     # Login is now an on-demand action triggered by the user in Telegram.
     load_credentials()
+    startup_login()
 
     print("[Pyrogram] Starting the bot...")
     app.start()
