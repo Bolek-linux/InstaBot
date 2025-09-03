@@ -145,8 +145,8 @@ async def status_command_handler(client: PyrogramClient, message: Message):
 
 
 # --- Main Message Handler ---
-@app.on_message(filters.text & filters.private & ~filters.command(
-    ["start", "setlogin", "setpassword", "login", "status", "logout"]))
+@app.on_message(
+    filters.text & filters.private & ~filters.command(["start", "setlogin", "setpassword", "login", "status"]))
 async def message_handler(client: PyrogramClient, message: Message):
     """Handles regular text messages to check for live streams."""
     if shared_state.instagrapi_client is None:
@@ -170,13 +170,17 @@ async def message_handler(client: PyrogramClient, message: Message):
                                  f"\n\n**Record command:**\n`streamlink \"{result['mpd_url']}\" best --stdout | ffmpeg -i pipe:0 -c copy {result['broadcast_id']}.mp4`")
             else:
                 response_text = f"❌ **No, `{username}` is not live streaming.**"
-        else:
+
+        # Handle the new "private" status.
+        elif result["status"] == "private":
+            response_text = f"ℹ️ **Info:** {result['message']}"
+
+        else:  # This covers the "error" status
             response_text = f"⚠️ **Error:** {result['message']}"
 
         await processing_message.edit_text(response_text, disable_web_page_preview=True)
 
     except CRITICAL_INSTAGRAM_EXCEPTIONS as _e:
-        # A critical error means the session is invalid. Perform a hard reset.
         logger.critical("\n--- A CRITICAL ERROR OCCURRED DURING BOT OPERATION. ---")
         shared_state.instagrapi_client = None  # Reset the client
         if SESSION_FILE.exists(): SESSION_FILE.unlink()

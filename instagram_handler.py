@@ -201,6 +201,55 @@ def startup_login():
 
 
 # --- Instagrapi Core Function ---
+# def check_livestream(cl: InstagrapiClient, username: str) -> dict:
+#     """
+#     Checks if a given Instagram user is currently live-streaming.
+#
+#     Handles non-critical errors gracefully and re-raises critical exceptions
+#     that indicate a session-wide problem.
+#
+#     Parameters
+#     ----------
+#     cl : InstagrapiClient
+#         An authenticated instagrapi.Client instance.
+#     username : str
+#         The Instagram username to check.
+#
+#     Returns
+#     -------
+#     dict
+#         A dictionary containing the status of the check.
+#         On success: `{"status": "success", "live": True, ...}` or `{"status": "success", "live": False}`
+#         On error: `{"status": "error", "message": "..."}`
+#     """
+#     try:
+#         logger.debug(f"[Instagrapi] Checking live stream for {username}...")
+#         user_id = cl.user_id_from_username(username)
+#         response_data = cl.private_request(f"feed/user/{user_id}/story/")
+#         print(response_data)
+#
+#         if broadcast_object := response_data.get("broadcast"):
+#             broadcast_id = broadcast_object.get("id")
+#             mpd_url = broadcast_object.get("dash_playback_url")
+#             logger.debug(f"[Instagrapi] Live stream found for {username}.")
+#             return {"status": "success", "live": True, "broadcast_id": broadcast_id, "mpd_url": mpd_url}
+#         else:
+#             logger.debug(f"[Instagrapi] User {username} is not broadcasting.")
+#             return {"status": "success", "live": False}
+#
+#     except UserNotFound:
+#         logger.debug(f"[Instagrapi] ERROR: User {username} not found.")
+#         return {"status": "error", "message": f"User '{username}' not found.."}
+#     except FeedbackRequired as _e:
+#         logger.error(f"[Instagrapi] ERROR: Action blocked (FeedbackRequired) while checking {username}.")
+#         return {"status": "error",
+#                 "message": f"The bot's Instagram account is temporarily blocked. Please try again later.\n\n`{_e}`"}
+#     except CRITICAL_INSTAGRAM_EXCEPTIONS:
+#         raise  # Re-throw the exception to be handled globally
+#     except Exception as _e:
+#         logger.error(f"[Instagrapi] An unexpected error occurred while checking {username}: {_e}")
+#         return {"status": "error", "message": f"An unexpected internal error occurred: {_e}"}
+
 def check_livestream(cl: InstagrapiClient, username: str) -> dict:
     """
     Checks if a given Instagram user is currently live-streaming.
@@ -220,11 +269,30 @@ def check_livestream(cl: InstagrapiClient, username: str) -> dict:
     dict
         A dictionary containing the status of the check.
         On success: `{"status": "success", "live": True, ...}` or `{"status": "success", "live": False}`
+        On private: `{"status": "private", "message": "..."}`
         On error: `{"status": "error", "message": "..."}`
     """
     try:
+        # First, retrieve basic user information to check their privacy status.
+        logger.debug(f"[Instagrapi] Getting user info for {username}...")
+        user_info = cl.user_info_by_username(username)
+
+        # Check if the account is private.
+        if user_info.is_private:
+            # To check a livestream on a private account, the bot must be following it.
+            # We fetch the friendship status to verify this.
+            friendship = cl.user_friendship_v1(user_info.pk)
+            if not friendship.following:
+                logger.debug(f"[Instagrapi] User {username} is private and not followed by the bot.")
+                return {
+                    "status": "private",
+                    "message": f"The account '{username}' is private. The bot must follow it to check the live stream status."
+                }
+
+        # If the account is public, or private and followed, proceed.
         logger.debug(f"[Instagrapi] Checking live stream for {username}...")
-        user_id = cl.user_id_from_username(username)
+        # Reuse the user_id we've already fetched instead of making another API call.
+        user_id = user_info.pk
         response_data = cl.private_request(f"feed/user/{user_id}/story/")
 
         if broadcast_object := response_data.get("broadcast"):
@@ -238,7 +306,7 @@ def check_livestream(cl: InstagrapiClient, username: str) -> dict:
 
     except UserNotFound:
         logger.debug(f"[Instagrapi] ERROR: User {username} not found.")
-        return {"status": "error", "message": f"User '{username}' not found.."}
+        return {"status": "error", "message": f"User '{username}' not found."}
     except FeedbackRequired as _e:
         logger.error(f"[Instagrapi] ERROR: Action blocked (FeedbackRequired) while checking {username}.")
         return {"status": "error",
