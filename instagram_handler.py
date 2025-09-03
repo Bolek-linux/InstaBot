@@ -5,6 +5,7 @@ including credential management, login procedures, and live stream checks.
 """
 
 import asyncio
+import logging
 from typing import Optional
 
 from pyrogram.types import Message
@@ -27,6 +28,8 @@ from config import (
 import shared_state
 from encryption_handler import encrypt_data, decrypt_data
 
+logger = logging.getLogger(__name__)
+
 
 # --- Credential Management Logic ---
 def load_credentials():
@@ -37,9 +40,9 @@ def load_credentials():
         with open(CREDENTIALS_FILE, "rb") as f:  # Open in binary read mode
             encrypted_data = f.read()
         shared_state.ig_credentials = decrypt_data(encrypted_data)
-        print("[Credentials] Decrypted credentials loaded from file.")
+        logger.info('[Credentials] Decrypted credentials loaded from file.')
     else:
-        print("[Credentials] credentials.json file not found.")
+        logger.warning('[Credentials] credentials.json file not found.')
 
 
 def save_credentials():
@@ -49,7 +52,7 @@ def save_credentials():
     encrypted_data = encrypt_data(shared_state.ig_credentials)
     with open(CREDENTIALS_FILE, "wb") as f:  # Open in binary write mode
         f.write(encrypted_data)
-    print("[Credentials] Encrypted credentials saved to file.")
+    logger.info('[Credentials] Encrypted credentials saved to file.')
 
 
 # --- Instagram Login Logic ---
@@ -78,25 +81,43 @@ def perform_instagram_login(username, password) -> InstagrapiClient:
     CRITICAL_INSTAGRAM_EXCEPTIONS
         If a critical, unrecoverable login error occurs.
     """
+
     client = InstagrapiClient()
+
     if SESSION_FILE.exists():
         client.load_settings(SESSION_FILE)
-        print("[Instagrapi] Session loaded from file.")
+        logger.info("[Instagrapi] Session loaded from file.")
         client.login(username, password)
         client.get_timeline_feed()  # Verify that the session is valid
-        print("[Instagrapi] Session is still valid.")
+        logger.info("[Instagrapi] Session is still valid.")
     else:
         client.login(username, password)
-        print("[Instagrapi] Logged in for the first time.")
+        logger.info("[Instagrapi] Logged in for the first time.")
         client.dump_settings(SESSION_FILE)
-        print(f"[Instagrapi] New session has been saved to {SESSION_FILE.name}.")
+        logger.info(f"[Instagrapi] New session has been saved to {SESSION_FILE.name}.")
+
     return client
 
 
-async def attempt_login(message: Optional[Message] = None):
+def mask_password(password: str) -> str:
+    """Masks a password, showing only the first and last characters."""
+    if len(password) > 2:
+        return f"{password[0]}{'*' * (len(password) - 2)}{password[-1]}"
+    return "*" * len(password)
+
+
+async def attempt_login(message: Optional[Message] = None, manual_first_attempt: bool = False):
     """
     Universal login wrapper. Can be called on startup (without a message)
     or by a command (with a message to reply to).
+
+    Parameters
+    ----------
+    message : Optional[Message], optional
+        The Telegram message object to reply to. Defaults to None.
+    manual_first_attempt : bool, optional
+        If True, the function handles login errors less destructively,
+        assuming it's a user's first manual attempt. Defaults to False.
     """
     shared_state.instagrapi_client = None
 
@@ -106,7 +127,7 @@ async def attempt_login(message: Optional[Message] = None):
     if not (username and password):
         # This will only be reached if called on startup without credentials, which is fine.
         # If called by a command, the handler should check this first.
-        print("[Instagrapi] Login attempt skipped: credentials not found.")
+        logger.warning("[Instagrapi] Login attempt skipped: credentials not found.")
         return
 
     if message:
@@ -115,23 +136,41 @@ async def attempt_login(message: Optional[Message] = None):
     try:
         new_client = await asyncio.to_thread(perform_instagram_login, username, password)
         shared_state.instagrapi_client = new_client
-        print("[Instagrapi] Successfully logged in and initialized the client.")
+        logger.info("[Instagrapi] Successfully logged in and initialized the client.")
         if message:
             await message.reply_text("✅ Successfully logged in to Instagram!")
 
     except (BadPassword, LoginRequired) as e:
         error_type = "Invalid password" if isinstance(e, BadPassword) else "Session expired"
-        print(f"--- CRITICAL ERROR: {error_type}. ---")
-        if SESSION_FILE.exists(): SESSION_FILE.unlink()
-        if CREDENTIALS_FILE.exists(): CREDENTIALS_FILE.unlink()
-        shared_state.ig_credentials = {}
-        print("[Credentials] Deleted invalid session and credentials files.")
-        if message:
+
+        # If this is a user-initiated first attempt, inform them without deleting credentials.
+        if manual_first_attempt and message:
+            logger.warning(f"[Instagrapi] Failed first login attempt: {error_type}.")
+            masked_pass = mask_password(password)
             await message.reply_text(
-                f"⚠️ **Login Failed:** {error_type}. Your credentials have been cleared. Please set them again.\n\n`{e}`")
+                f"⚠️ **Login Failed:** {error_type}.\n\n"
+                f"Please check your current credentials:\n"
+                f"▫️ **Username:** `{username}`\n"
+                f"▫️ **Password:** `{masked_pass}`\n\n"
+                "You can correct them using the commands:\n"
+                "`/setlogin <new_username>`\n"
+                "`/setpassword <new_password>`"
+            )
+        else:
+            # Otherwise, the saved credentials are bad (e.g., on startup or during a check).
+            # Perform a hard reset of credentials.
+            logger.error(f"--- ERROR: {error_type}. ---")
+            if SESSION_FILE.exists(): SESSION_FILE.unlink()
+            if CREDENTIALS_FILE.exists(): CREDENTIALS_FILE.unlink()
+            shared_state.ig_credentials = {}
+            logger.warning("[Credentials] Deleted invalid session and credentials files.")
+            if message:
+                await message.reply_text(
+                    f"⚠️ **Login Failed:** {error_type}. Your saved credentials have been cleared. Please set them again.\n\n`{e}`")
+
     except Exception as e:
         # Catch other critical errors
-        print(f"--- CRITICAL ERROR: An unexpected error occurred during login: {e} ---")
+        logger.critical(f"--- CRITICAL ERROR: An unexpected error occurred during login: {e} ---")
         if message:
             # Inform user about other specific, critical errors
             if isinstance(e, ChallengeRequired):
@@ -153,12 +192,12 @@ def startup_login():
     It runs the asynchronous 'attempt_login' in a new asyncio event loop.
     This prevents conflicts with Pyrogram's event loop.
     """
-    print("[Startup] Attempting to log in to Instagram if credentials exist...")
+    logger.info("[Startup] Attempting to log in to Instagram if credentials exist...")
     try:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(attempt_login())
     except Exception as e:
-        print(f"[Startup] An error occurred during the initial login attempt: {e}")
+        logger.error(f"[Startup] An error occurred during the initial login attempt: {e}")
 
 
 # --- Instagrapi Core Function ---
@@ -184,28 +223,28 @@ def check_livestream(cl: InstagrapiClient, username: str) -> dict:
         On error: `{"status": "error", "message": "..."}`
     """
     try:
-        print(f"[Instagrapi] Checking live stream for {username}...")
+        logger.debug(f"[Instagrapi] Checking live stream for {username}...")
         user_id = cl.user_id_from_username(username)
         response_data = cl.private_request(f"feed/user/{user_id}/story/")
 
         if broadcast_object := response_data.get("broadcast"):
             broadcast_id = broadcast_object.get("id")
             mpd_url = broadcast_object.get("dash_playback_url")
-            print(f"[Instagrapi] Live stream found for {username}.")
+            logger.debug(f"[Instagrapi] Live stream found for {username}.")
             return {"status": "success", "live": True, "broadcast_id": broadcast_id, "mpd_url": mpd_url}
         else:
-            print(f"[Instagrapi] User {username} is not broadcasting.")
+            logger.debug(f"[Instagrapi] User {username} is not broadcasting.")
             return {"status": "success", "live": False}
 
     except UserNotFound:
-        print(f"[Instagrapi] ERROR: User {username} not found.")
+        logger.debug(f"[Instagrapi] ERROR: User {username} not found.")
         return {"status": "error", "message": f"User '{username}' not found.."}
     except FeedbackRequired as _e:
-        print(f"[Instagrapi] ERROR: Action blocked (FeedbackRequired) while checking {username}.")
+        logger.error(f"[Instagrapi] ERROR: Action blocked (FeedbackRequired) while checking {username}.")
         return {"status": "error",
                 "message": f"The bot's Instagram account is temporarily blocked. Please try again later.\n\n`{_e}`"}
     except CRITICAL_INSTAGRAM_EXCEPTIONS:
         raise  # Re-throw the exception to be handled globally
     except Exception as _e:
-        print(f"[Instagrapi] An unexpected error occurred while checking {username}: {_e}")
+        logger.error(f"[Instagrapi] An unexpected error occurred while checking {username}: {_e}")
         return {"status": "error", "message": f"An unexpected internal error occurred: {_e}"}

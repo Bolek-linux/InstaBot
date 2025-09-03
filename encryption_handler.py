@@ -5,9 +5,14 @@ such as the Instagram credentials file. It uses the AES-GCM algorithm
 provided by the 'cryptography' library's Fernet implementation.
 """
 
+import logging
 import os
 import json
 from cryptography.fernet import Fernet, InvalidToken
+
+
+logger = logging.getLogger(__name__)
+
 
 # The encryption key is loaded from an environment variable for security.
 # Storing sensitive keys directly in the code is highly discouraged.
@@ -16,6 +21,7 @@ if not key:
     raise ValueError("ENCRYPTION_KEY is not set in the environment variables.")
 
 cipher_suite = Fernet(key.encode())
+
 
 def encrypt_data(data: dict) -> bytes:
     """
@@ -34,6 +40,7 @@ def encrypt_data(data: dict) -> bytes:
     # The dictionary is converted to a JSON string, then to bytes for encryption.
     plaintext = json.dumps(data).encode('utf-8')
     return cipher_suite.encrypt(plaintext)
+
 
 def decrypt_data(encrypted_data: bytes) -> dict:
     """
@@ -55,8 +62,8 @@ def decrypt_data(encrypted_data: bytes) -> dict:
         # The decrypted bytes are converted back to a string, then parsed as JSON.
         return json.loads(decrypted_plaintext.decode('utf-8'))
     except InvalidToken:
-        print("[Encryption] Decryption failed: Invalid token or key. Returning empty credentials.")
+        logger.error("[Encryption] Decryption failed: Invalid token or key. Returning empty credentials.")
         return {}
     except Exception as e:
-        print(f"[Encryption] An unexpected error occurred during decryption: {e}")
+        logger.error(f"[Encryption] An unexpected error occurred during decryption: {e}")
         return {}

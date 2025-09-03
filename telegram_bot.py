@@ -5,6 +5,7 @@ It defines command handlers and the main message processing logic.
 """
 
 import asyncio
+import logging
 from pyrogram import Client as PyrogramClient, filters, idle
 from pyrogram.types import Message
 
@@ -17,8 +18,11 @@ from instagram_handler import (
 )
 import shared_state
 
+logger = logging.getLogger(__name__)
+
 # --- Telegram Bot Initialization ---
 app = PyrogramClient("live_checker_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
 
 # --- Command Handlers ---
 @app.on_message(filters.command("start"))
@@ -30,9 +34,11 @@ async def start_handler(client: PyrogramClient, message: Message):
         "▫️ `/setlogin <username>` - Sets the Instagram username.\n"
         "▫️ `/setpassword <password>` - Sets the Instagram password (message will be deleted).\n"
         "▫️ `/login` - Manually attempts to log in using the saved credentials.\n"
-        "▫️ `/status` - Checks if the bot is currently logged in to Instagram.\n\n"
+        "▫️ `/status` - Checks if the bot is currently logged in to Instagram.\n"
+        "▫️ `/logout` - Logs the bot out and clears all saved data.\n\n"
         "After a successful login, you can send me a username to check if they are live."
     )
+
 
 @app.on_message(filters.command("setlogin"))
 async def set_login_handler(client: PyrogramClient, message: Message):
@@ -40,7 +46,7 @@ async def set_login_handler(client: PyrogramClient, message: Message):
     if shared_state.instagrapi_client is not None:
         await message.reply_text(
             "❌ **Action denied:** The bot is already logged in.\n\n"
-            "To change credentials, you must first stop the bot, delete the `credentials.json` and `session.json` files, and then restart."
+            "To change credentials, please use the `/logout` command first."
         )
         return
 
@@ -58,13 +64,14 @@ async def set_login_handler(client: PyrogramClient, message: Message):
     except IndexError:
         await message.reply_text("Incorrect usage. Format: `/setlogin <username>`")
 
+
 @app.on_message(filters.command("setpassword"))
 async def set_password_handler(client: PyrogramClient, message: Message):
     """Handles setting the Instagram password and deletes the message for security."""
     if shared_state.instagrapi_client is not None:
         await message.reply_text(
             "❌ **Action denied:** The bot is already logged in.\n\n"
-            "To change credentials, you must first stop the bot, delete the `credentials.json` and `session.json` files, and then restart."
+            "To change credentials, please use the `/logout` command first."
         )
         await message.delete()
         return
@@ -74,18 +81,20 @@ async def set_password_handler(client: PyrogramClient, message: Message):
         shared_state.ig_credentials["password"] = password
         save_credentials()
 
-        confirmation_msg = await message.reply_text("✅ Instagram password has been set. Your message with the password will be deleted shortly.")
+        await message.reply_text(
+            "✅ Instagram password has been set. Your message with the password will be deleted shortly.")
 
         if "username" in shared_state.ig_credentials and shared_state.ig_credentials["username"]:
-            await confirmation_msg.reply_text("Both username and password are set. Use the `/login` command to connect.")
+            await message.reply_text("Both username and password are set. Use the `/login` command to connect.")
         else:
-            await confirmation_msg.reply_text("Now, please set the username using `/setlogin <username>`.")
+            await message.reply_text("Now, please set the username using `/setlogin <username>`.")
 
         await asyncio.sleep(2)
         await message.delete()
 
     except IndexError:
         await message.reply_text("Incorrect usage. Format: `/setpassword <password>`")
+
 
 @app.on_message(filters.command("login"))
 async def login_command_handler(client: PyrogramClient, message: Message):
@@ -95,12 +104,35 @@ async def login_command_handler(client: PyrogramClient, message: Message):
         return
 
     if "username" in shared_state.ig_credentials and "password" in shared_state.ig_credentials:
-        await attempt_login(message)
+        # Call the login function with a flag indicating it's a manual first attempt.
+        await attempt_login(message, manual_first_attempt=True)
     else:
         await message.reply_text(
             "❌ **Cannot log in:** Credentials are not set.\n\n"
             "Please use `/setlogin <username>` and `/setpassword <password>` first."
         )
+
+
+@app.on_message(filters.command("logout"))
+async def logout_command_handler(client: PyrogramClient, message: Message):
+    """Handles logging out and clearing all credentials and session files."""
+    if not shared_state.instagrapi_client and not shared_state.ig_credentials:
+        await message.reply_text("ℹ️ **Info:** The bot is not logged in and no credentials are saved.")
+        return
+
+    shared_state.instagrapi_client = None
+    shared_state.ig_credentials = {}
+
+    if SESSION_FILE.exists(): SESSION_FILE.unlink()
+    if CREDENTIALS_FILE.exists(): CREDENTIALS_FILE.unlink()
+
+    logger.info("[Logout] User has manually cleared all credentials and session data.")
+    await message.reply_text(
+        "✅ **Logged Out Successfully.**\n\n"
+        "All credentials and session files have been deleted. "
+        "You can now set new credentials using `/setlogin` and `/setpassword`."
+    )
+
 
 @app.on_message(filters.command("status"))
 async def status_command_handler(client: PyrogramClient, message: Message):
@@ -108,10 +140,13 @@ async def status_command_handler(client: PyrogramClient, message: Message):
     if shared_state.instagrapi_client:
         await message.reply_text("✅ The bot is successfully logged in to Instagram.")
     else:
-        await message.reply_text("❌ The bot is not logged in to Instagram. Use /setlogin and /setpassword, then /login.")
+        await message.reply_text(
+            "❌ The bot is not logged in to Instagram. Use /setlogin and /setpassword, then /login.")
+
 
 # --- Main Message Handler ---
-@app.on_message(filters.text & filters.private & ~filters.command(["start", "setlogin", "setpassword", "login", "status"]))
+@app.on_message(filters.text & filters.private & ~filters.command(
+    ["start", "setlogin", "setpassword", "login", "status", "logout"]))
 async def message_handler(client: PyrogramClient, message: Message):
     """Handles regular text messages to check for live streams."""
     if shared_state.instagrapi_client is None:
@@ -141,11 +176,12 @@ async def message_handler(client: PyrogramClient, message: Message):
         await processing_message.edit_text(response_text, disable_web_page_preview=True)
 
     except CRITICAL_INSTAGRAM_EXCEPTIONS as _e:
-        print("\n--- A CRITICAL ERROR OCCURRED DURING BOT OPERATION. ---")
-        shared_state.instagrapi_client = None # Reset the client
+        # A critical error means the session is invalid. Perform a hard reset.
+        logger.critical("\n--- A CRITICAL ERROR OCCURRED DURING BOT OPERATION. ---")
+        shared_state.instagrapi_client = None  # Reset the client
         if SESSION_FILE.exists(): SESSION_FILE.unlink()
         if CREDENTIALS_FILE.exists(): CREDENTIALS_FILE.unlink()
         shared_state.ig_credentials = {}
-        print("[Credentials] Deleted credentials file due to a critical session error.")
+        logger.warning("[Credentials] Deleted credentials file due to a critical session error.")
         await processing_message.edit_text(
             f"⚠️ **Critical Error:** A problem occurred with the Instagram session (e.g., logout). The session and credentials have been reset. Please configure and log in again.\n\n`{_e}`")
