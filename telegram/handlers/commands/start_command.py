@@ -1,4 +1,4 @@
-# TelegramBot/handlers/commands/start_command.py
+# telegram/handlers/commands/start_command.py
 from pyrogram import Client, filters
 from pyrogram.types import Message
 

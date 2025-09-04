@@ -1,4 +1,4 @@
-# TelegramBot/handlers/commands/insta_conf_commands.py
+# telegram/handlers/commands/insta_conf_commands.py
 import asyncio
 import logging
 from pyrogram import Client, filters

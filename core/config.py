@@ -17,7 +17,7 @@ from instagrapi.exceptions import (
 load_dotenv()
 
 # --- Core Directories ---
-DATA_DIR = Path("Data")
+DATA_DIR = Path("data")
 
 # --- Configuration Files ---
 SESSION_FILE = DATA_DIR / "session.enc"

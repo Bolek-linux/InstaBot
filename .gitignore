@@ -24,11 +24,11 @@ __pycache__/
 # session data, logs, or other machine-specific information.
 
 # Ignore all log files.
-Logs/
+logs/
 
 # Ignore session files from Pyrogram and Instagrapi.
-Data/*.session
-Data/*.enc
+data/*.session
+data/*.enc
 
 
 # # # Secrets and Credentials # # #

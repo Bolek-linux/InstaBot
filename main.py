@@ -13,7 +13,7 @@ from core.logging_config import setup_logging
 # --- Local Imports ---
 from core.config import API_ID, API_HASH, BOT_TOKEN, DATA_DIR
 from core.instagram_handler import load_credentials, startup_login
-from TelegramBot.bot import app
+from telegram.bot import app
 
 
 if __name__ == "__main__":
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # --- Bot Startup Sequence ---
     logger.info("--- Starting the bot ---")
 
-    # --- Ensure Data Directory Exists ---
+    # --- Ensure data Directory Exists ---
     # This guarantees that session and credential files have a place to be stored.
     DATA_DIR.mkdir(exist_ok=True)
 

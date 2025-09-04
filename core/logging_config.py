@@ -6,7 +6,7 @@ from pathlib import Path
 
 # --- Module-Level Constants ---
 # All log files will be stored in this directory. It will be created if it doesn't exist.
-LOGS_DIR = Path("../Logs")
+LOGS_DIR = Path("logs")
 
 
 def setup_logging():

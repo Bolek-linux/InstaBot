@@ -1,4 +1,4 @@
-# TelegramBot/handlers/messages/text_message.py
+# telegram/handlers/messages/text_message.py
 import asyncio
 import logging
 import re
