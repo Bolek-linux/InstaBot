@@ -1,4 +1,4 @@
-# config.py
+# core/config.py
 """
 This module holds the application's configuration and constants.
 It loads environment variables and defines file paths and critical error types.
@@ -20,7 +20,6 @@ load_dotenv()
 DATA_DIR = Path("Data")
 
 # --- Configuration Files ---
-# ZMIANA: Zaktualizowano ścieżki, aby wskazywały na katalog DATA_DIR.
 SESSION_FILE = DATA_DIR / "session.enc"
 CREDENTIALS_FILE = DATA_DIR / "credentials.enc"
 

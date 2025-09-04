@@ -1,4 +1,4 @@
-# shared_state.py
+# core/shared_state.py
 """
 This module contains the shared state of the application to avoid circular imports.
 It holds the global instance of the Instagrapi client and the Instagram credentials.

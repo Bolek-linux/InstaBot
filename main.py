@@ -8,11 +8,11 @@ import sys
 import logging
 from pyrogram import idle
 
-from logging_config import setup_logging
+from core.logging_config import setup_logging
 
 # --- Local Imports ---
-from config import API_ID, API_HASH, BOT_TOKEN, DATA_DIR
-from instagram_handler import load_credentials, startup_login
+from core.config import API_ID, API_HASH, BOT_TOKEN, DATA_DIR
+from core.instagram_handler import load_credentials, startup_login
 from TelegramBot.bot import app
 
 

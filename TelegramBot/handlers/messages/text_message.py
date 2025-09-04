@@ -7,9 +7,9 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 
 # --- Local Imports ---
-from config import CRITICAL_INSTAGRAM_EXCEPTIONS, SESSION_FILE, CREDENTIALS_FILE
-from instagram_handler import check_livestream
-import shared_state
+from core.config import CRITICAL_INSTAGRAM_EXCEPTIONS, SESSION_FILE, CREDENTIALS_FILE
+from core.instagram_handler import check_livestream
+from core import shared_state
 
 logger = logging.getLogger(__name__)
 

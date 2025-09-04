@@ -5,11 +5,10 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 
 # --- Local Imports ---
-from config import SESSION_FILE, CREDENTIALS_FILE
-from instagram_handler import save_credentials, attempt_login
+from core.config import SESSION_FILE, CREDENTIALS_FILE
+from core.instagram_handler import save_credentials, attempt_login
 
-import shared_state
-
+from core import shared_state
 
 logger = logging.getLogger(__name__)
 

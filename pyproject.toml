@@ -1,0 +1,13 @@
+[project]
+name = "instabot"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "colorlog>=6.9.0",
+    "cryptography>=45.0.6",
+    "dotenv>=0.9.9",
+    "instagrapi>=2.2.1",
+    "pyrogram>=2.0.106",
+    "tgcrypto>=1.2.5",
+]

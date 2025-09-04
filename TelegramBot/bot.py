@@ -6,7 +6,7 @@ to automatically load handlers from the 'handlers' directory.
 """
 
 from pyrogram import Client
-from config import API_ID, API_HASH, BOT_TOKEN
+from core.config import API_ID, API_HASH, BOT_TOKEN
 
 app = Client(
     "Data/live_checker_bot",

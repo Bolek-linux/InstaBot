@@ -1,4 +1,4 @@
-# encryption_handler.py
+# core/encryption_handler.py
 """
 This module handles the encryption and decryption of sensitive data,
 such as the Instagram credentials file. It uses the AES-GCM algorithm

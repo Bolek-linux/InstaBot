@@ -1,13 +1,11 @@
-# instagram_handler.py
+# core/instagram_handler.py
 """
 This module handles all interactions with the Instagrapi library,
 including credential management, login procedures, and live stream checks.
 """
-# UWAGA: Ten plik został znacząco zmodyfikowany, aby obsłużyć szyfrowanie pliku sesji.
 
 import asyncio
 import logging
-import json  # Import json for handling potential decoding errors
 
 from pyrogram.types import Message
 
@@ -22,12 +20,9 @@ from instagrapi.exceptions import (
 )
 
 # --- Local Imports ---
-from config import (
-    CREDENTIALS_FILE, SESSION_FILE,
-    CRITICAL_INSTAGRAM_EXCEPTIONS
-)
-import shared_state
-from encryption_handler import encrypt_data, decrypt_data
+from .config import CREDENTIALS_FILE, SESSION_FILE, CRITICAL_INSTAGRAM_EXCEPTIONS
+from . import shared_state
+from .encryption_handler import encrypt_data, decrypt_data
 
 logger = logging.getLogger(__name__)
 
