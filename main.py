@@ -6,12 +6,14 @@ It initializes the configuration, loads credentials, and starts the Telegram bot
 
 import sys
 import logging
+from pyrogram import idle
+
 from logging_config import setup_logging
 
 # --- Local Imports ---
 from config import API_ID, API_HASH, BOT_TOKEN
 from instagram_handler import load_credentials, startup_login
-from TelegramBot.telegram_bot import app, idle
+from TelegramBot.bot import app
 
 
 if __name__ == "__main__":
