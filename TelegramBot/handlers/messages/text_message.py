@@ -11,7 +11,6 @@ from config import CRITICAL_INSTAGRAM_EXCEPTIONS, SESSION_FILE, CREDENTIALS_FILE
 from instagram_handler import check_livestream
 import shared_state
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -98,6 +97,15 @@ async def message_handler(client: Client, message: Message):
         return
 
     username = extract_instagram_username(message.text)
+
+    # --- Add validation check for username format ---
+    # This prevents sending an API request with an obviously invalid username.
+    if not username:
+        await message.reply_text(
+            f"⚠️ **Invalid Format:** The provided text `{message.text}` is not a valid Instagram username or profile URL."
+        )
+        return
+
     processing_message = await message.reply_text(f"Checking if `{username}` is broadcasting... Please wait.")
 
     try:

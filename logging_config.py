@@ -63,6 +63,7 @@ def setup_logging():
     root_logger.addHandler(app_file_handler)
 
     # --- 2. Dedicated Logger for Instagrapi Errors ---
+    # This logger captures general library warnings and errors from instagrapi.
     insta_logger = logging.getLogger("instagrapi")
     insta_logger.setLevel(logging.WARNING)
     insta_error_handler = logging.FileHandler(LOGS_DIR / 'insta_errors.log', mode='a', encoding='utf-8')
@@ -82,10 +83,13 @@ def setup_logging():
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     # --- 5. Dedicated Logger for Instagrapi API Calls ---
+    # Instagrapi uses separate, non-hierarchical loggers for its API requests.
+    # We capture their INFO-level logs to create a record of all API calls.
     api_calls_handler = logging.FileHandler(LOGS_DIR / 'insta_api_calls.log', mode='a', encoding='utf-8')
     api_calls_handler.setLevel(logging.INFO)
     api_calls_handler.setFormatter(file_formatter)
 
+    # These are the correct, independent logger names as defined within the instagrapi library.
     private_req_logger = logging.getLogger("private_request")
     public_req_logger = logging.getLogger("public_request")
 
