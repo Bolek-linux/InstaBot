@@ -11,39 +11,15 @@ from logging_config import setup_logging
 # --- Local Imports ---
 from config import API_ID, API_HASH, BOT_TOKEN
 from instagram_handler import load_credentials, startup_login
-from telegram_bot import app, idle
+from TelegramBot.telegram_bot import app, idle
+
 
 if __name__ == "__main__":
     # --- Logging Configuration ---
-    # It's crucial to set up logging as the very first step to ensure
-    # all subsequent events in the application are properly logged.
+    # It's crucial to set up logging as the very first step. The 'setup_logging'
+    # function now handles the entire configuration, including setting levels
+    # for third-party libraries and directing their output to specific files.
     setup_logging()
-
-    # The following lines silence the overly verbose loggers from third-party libraries.
-    # By setting their level to WARNING, we only see important messages (like errors)
-    # instead of flooding the console with routine operational details (like INFO or DEBUG).
-
-    # Pyrogram is very verbose, logging every low-level interaction with Telegram's
-    # servers. Setting it to WARNING keeps the logs clean.
-    # -> To debug Telegram connection issues, change this to logging.INFO or logging.DEBUG.
-    logging.getLogger("pyrogram").setLevel(logging.WARNING)
-
-    # Urllib3 is a low-level HTTP library used by 'requests' (which instagrapi uses).
-    # It logs every single connection, which is unnecessary for normal operation.
-    # -> To debug raw network requests, change this to logging.INFO.
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-
-    # This is the main logger for the instagrapi library. While it's not as noisy
-    # as the others, we set it to WARNING to suppress general informational messages.
-    # Note: This does NOT silence the API request logs below.
-    logging.getLogger("instagrapi").setLevel(logging.WARNING)
-
-    # These are specific loggers within instagrapi that log every single API call
-    # made to Instagram's private (logged-in) and public (anonymous) endpoints.
-    # These logs were the source of the unwanted messages in the console.
-    # -> To see every API endpoint being called, change these to logging.INFO.
-    logging.getLogger("private_request").setLevel(logging.WARNING)
-    logging.getLogger("public_request").setLevel(logging.WARNING)
 
     # Get a logger for our main script.
     # Using __name__ is a standard practice that makes log messages more informative.
@@ -61,7 +37,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Load encrypted Instagram credentials if they exist.
-    # Login is not performed here; it's an on-demand action in the Telegram bot.
     load_credentials()
 
     # Attempt a startup login to Instagram if credentials were loaded.

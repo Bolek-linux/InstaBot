@@ -6,7 +6,6 @@ including credential management, login procedures, and live stream checks.
 
 import asyncio
 import logging
-from typing import Optional
 
 from pyrogram.types import Message
 
@@ -106,14 +105,14 @@ def mask_password(password: str) -> str:
     return "*" * len(password)
 
 
-async def attempt_login(message: Optional[Message] = None, manual_first_attempt: bool = False):
+async def attempt_login(message: Message | None = None, manual_first_attempt: bool = False):
     """
     Universal login wrapper. Can be called on startup (without a message)
     or by a command (with a message to reply to).
 
     Parameters
     ----------
-    message : Optional[Message], optional
+    message : Message | None, optional
         The Telegram message object to reply to. Defaults to None.
     manual_first_attempt : bool, optional
         If True, the function handles login errors less destructively,
@@ -201,55 +200,6 @@ def startup_login():
 
 
 # --- Instagrapi Core Function ---
-# def check_livestream(cl: InstagrapiClient, username: str) -> dict:
-#     """
-#     Checks if a given Instagram user is currently live-streaming.
-#
-#     Handles non-critical errors gracefully and re-raises critical exceptions
-#     that indicate a session-wide problem.
-#
-#     Parameters
-#     ----------
-#     cl : InstagrapiClient
-#         An authenticated instagrapi.Client instance.
-#     username : str
-#         The Instagram username to check.
-#
-#     Returns
-#     -------
-#     dict
-#         A dictionary containing the status of the check.
-#         On success: `{"status": "success", "live": True, ...}` or `{"status": "success", "live": False}`
-#         On error: `{"status": "error", "message": "..."}`
-#     """
-#     try:
-#         logger.debug(f"[Instagrapi] Checking live stream for {username}...")
-#         user_id = cl.user_id_from_username(username)
-#         response_data = cl.private_request(f"feed/user/{user_id}/story/")
-#         print(response_data)
-#
-#         if broadcast_object := response_data.get("broadcast"):
-#             broadcast_id = broadcast_object.get("id")
-#             mpd_url = broadcast_object.get("dash_playback_url")
-#             logger.debug(f"[Instagrapi] Live stream found for {username}.")
-#             return {"status": "success", "live": True, "broadcast_id": broadcast_id, "mpd_url": mpd_url}
-#         else:
-#             logger.debug(f"[Instagrapi] User {username} is not broadcasting.")
-#             return {"status": "success", "live": False}
-#
-#     except UserNotFound:
-#         logger.debug(f"[Instagrapi] ERROR: User {username} not found.")
-#         return {"status": "error", "message": f"User '{username}' not found.."}
-#     except FeedbackRequired as _e:
-#         logger.error(f"[Instagrapi] ERROR: Action blocked (FeedbackRequired) while checking {username}.")
-#         return {"status": "error",
-#                 "message": f"The bot's Instagram account is temporarily blocked. Please try again later.\n\n`{_e}`"}
-#     except CRITICAL_INSTAGRAM_EXCEPTIONS:
-#         raise  # Re-throw the exception to be handled globally
-#     except Exception as _e:
-#         logger.error(f"[Instagrapi] An unexpected error occurred while checking {username}: {_e}")
-#         return {"status": "error", "message": f"An unexpected internal error occurred: {_e}"}
-
 def check_livestream(cl: InstagrapiClient, username: str) -> dict:
     """
     Checks if a given Instagram user is currently live-streaming.
@@ -314,5 +264,5 @@ def check_livestream(cl: InstagrapiClient, username: str) -> dict:
     except CRITICAL_INSTAGRAM_EXCEPTIONS:
         raise  # Re-throw the exception to be handled globally
     except Exception as _e:
-        logger.error(f"[Instagrapi] An unexpected error occurred while checking {username}: {_e}")
+        logger.critical(f"[Instagrapi] An unexpected error occurred while checking {username}: {_e}")
         return {"status": "error", "message": f"An unexpected internal error occurred: {_e}"}
