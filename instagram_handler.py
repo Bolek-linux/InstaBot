@@ -3,9 +3,11 @@
 This module handles all interactions with the Instagrapi library,
 including credential management, login procedures, and live stream checks.
 """
+# UWAGA: Ten plik został znacząco zmodyfikowany, aby obsłużyć szyfrowanie pliku sesji.
 
 import asyncio
 import logging
+import json  # Import json for handling potential decoding errors
 
 from pyrogram.types import Message
 
@@ -36,12 +38,12 @@ def load_credentials():
     Loads and decrypts Instagram credentials from the credentials file into the shared state.
     """
     if CREDENTIALS_FILE.exists():
-        with open(CREDENTIALS_FILE, "rb") as f:  # Open in binary read mode
+        with open(CREDENTIALS_FILE, "rb") as f:
             encrypted_data = f.read()
         shared_state.ig_credentials = decrypt_data(encrypted_data)
         logger.info('[Credentials] Decrypted credentials loaded from file.')
     else:
-        logger.warning('[Credentials] credentials.json file not found.')
+        logger.warning('[Credentials] credentials.enc file not found.')
 
 
 def save_credentials():
@@ -49,7 +51,7 @@ def save_credentials():
     Encrypts and saves the current Instagram credentials from shared state to the credentials file.
     """
     encrypted_data = encrypt_data(shared_state.ig_credentials)
-    with open(CREDENTIALS_FILE, "wb") as f:  # Open in binary write mode
+    with open(CREDENTIALS_FILE, "wb") as f:
         f.write(encrypted_data)
     logger.info('[Credentials] Encrypted credentials saved to file.')
 
@@ -57,9 +59,9 @@ def save_credentials():
 # --- Instagram Login Logic ---
 def perform_instagram_login(username, password) -> InstagrapiClient:
     """
-    Handles the blocking login process for Instagrapi.
+    Handles the blocking login process for Instagrapi, now with encrypted session handling.
 
-    This function attempts to log in using an existing session file or
+    This function attempts to log in using an existing encrypted session file or
     by creating a new one with the provided username and password. This function
     is designed to be run in a separate thread to avoid blocking the bot's event loop.
 
@@ -83,17 +85,42 @@ def perform_instagram_login(username, password) -> InstagrapiClient:
 
     client = InstagrapiClient()
 
+    # ZMIANA: Logika ładowania i zapisywania sesji została zmodyfikowana, aby używać szyfrowania.
     if SESSION_FILE.exists():
-        client.load_settings(SESSION_FILE)
-        logger.info("[Instagrapi] Session loaded from file.")
-        client.login(username, password)
-        client.get_timeline_feed()  # Verify that the session is valid
-        logger.info("[Instagrapi] Session is still valid.")
+        logger.info("[Instagrapi] Encrypted session file found. Attempting to load.")
+        with open(SESSION_FILE, "rb") as f:
+            encrypted_session = f.read()
+
+        decrypted_settings = decrypt_data(encrypted_session)
+
+        # Check if decryption was successful and data is not empty
+        if decrypted_settings:
+            client.set_settings(decrypted_settings)
+            logger.info("[Instagrapi] Session decrypted and loaded.")
+            client.login(username, password)
+            client.get_timeline_feed()  # Verify that the session is valid
+            logger.info("[Instagrapi] Session is still valid.")
+        else:
+            # Decryption failed, treat as if no session file exists
+            logger.warning("[Instagrapi] Failed to decrypt session file, proceeding with fresh login.")
+            client.login(username, password)
+            logger.info("[Instagrapi] Logged in for the first time (after failed decryption).")
+            # Save the new, valid session
+            encrypted_session_data = encrypt_data(client.get_settings())
+            with open(SESSION_FILE, "wb") as f:
+                f.write(encrypted_session_data)
+            logger.info(f"[Instagrapi] New encrypted session has been saved to {SESSION_FILE.name}.")
+
     else:
+        logger.info("[Instagrapi] No session file found. Performing first-time login.")
         client.login(username, password)
-        logger.info("[Instagrapi] Logged in for the first time.")
-        client.dump_settings(SESSION_FILE)
-        logger.info(f"[Instagrapi] New session has been saved to {SESSION_FILE.name}.")
+        logger.info("[Instagrapi] Logged in successfully.")
+
+        # Encrypt and save the new session
+        encrypted_session_data = encrypt_data(client.get_settings())
+        with open(SESSION_FILE, "wb") as f:
+            f.write(encrypted_session_data)
+        logger.info(f"[Instagrapi] New encrypted session has been saved to {SESSION_FILE.name}.")
 
     return client
 

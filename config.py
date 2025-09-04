@@ -21,7 +21,7 @@ DATA_DIR = Path("Data")
 
 # --- Configuration Files ---
 # ZMIANA: Zaktualizowano ścieżki, aby wskazywały na katalog DATA_DIR.
-SESSION_FILE = DATA_DIR / "session.json"
+SESSION_FILE = DATA_DIR / "session.enc"
 CREDENTIALS_FILE = DATA_DIR / "credentials.enc"
 
 # --- Telegram Credentials ---

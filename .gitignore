@@ -3,7 +3,7 @@
 # and session tokens. They should NEVER be committed to version control.
 .env
 Data/credentials.enc
-Data/session.json
+Data/session.enc
 
 
 # # # Python specific files # # #
