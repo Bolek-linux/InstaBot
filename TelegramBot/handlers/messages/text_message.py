@@ -70,8 +70,6 @@ def extract_instagram_username(input_string: str) -> str | None:
 
     match = url_pattern.match(input_string)
 
-    potential_username = ""
-
     if match:
         # If the input is a URL that matches the pattern, extract the named group.
         potential_username = match.group("username")

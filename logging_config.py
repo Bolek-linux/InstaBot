@@ -4,6 +4,11 @@ import colorlog
 from pathlib import Path
 
 
+# --- Module-Level Constants ---
+# All log files will be stored in this directory. It will be created if it doesn't exist.
+LOGS_DIR = Path("Logs")
+
+
 def setup_logging():
     """
     Configures an advanced, multi-target logging system for the application.
@@ -27,9 +32,7 @@ def setup_logging():
     To prevent duplicate entries and keep the console clean, propagation is disabled for all
     dedicated loggers.
     """
-    # --- 0. Define and Create Log Directory ---
-    # All log files will be stored in this directory. It will be created if it doesn't exist.
-    LOGS_DIR = Path("Logs")
+    # --- 0. Ensure Log Directory Exists ---
     LOGS_DIR.mkdir(exist_ok=True)
 
     # --- 1. Root Logger Configuration (for console and general app file) ---
