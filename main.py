@@ -11,7 +11,7 @@ from pyrogram import idle
 from logging_config import setup_logging
 
 # --- Local Imports ---
-from config import API_ID, API_HASH, BOT_TOKEN
+from config import API_ID, API_HASH, BOT_TOKEN, DATA_DIR
 from instagram_handler import load_credentials, startup_login
 from TelegramBot.bot import app
 
@@ -29,6 +29,10 @@ if __name__ == "__main__":
 
     # --- Bot Startup Sequence ---
     logger.info("--- Starting the bot ---")
+
+    # --- Ensure Data Directory Exists ---
+    # This guarantees that session and credential files have a place to be stored.
+    DATA_DIR.mkdir(exist_ok=True)
 
     # Verify that essential Telegram credentials are set.
     if not all([API_ID, API_HASH, BOT_TOKEN]):

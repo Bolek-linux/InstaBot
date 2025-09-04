@@ -2,8 +2,8 @@
 # These files contain sensitive information like API keys, passwords,
 # and session tokens. They should NEVER be committed to version control.
 .env
-credentials.enc
-session.json
+Data/credentials.enc
+Data/session.json
 
 
 # # # Python specific files # # #
@@ -27,5 +27,5 @@ env/
 .idea/
 
 uv.lock
-live_checker_bot.session
+Data/live_checker_bot.session
 pyproject.toml
