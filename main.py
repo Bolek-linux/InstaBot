@@ -19,7 +19,7 @@ from telegram.bot import app
 if __name__ == "__main__":
     # --- Logging Configuration ---
     # It's crucial to set up logging as the very first step. The 'setup_logging'
-    # function now handles the entire configuration, including setting levels
+    # function handles the entire configuration, including setting levels
     # for third-party libraries and directing their output to specific files.
     setup_logging()
 
