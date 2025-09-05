@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
+    "argon2-cffi>=25.1.0",
     "colorlog>=6.9.0",
     "cryptography>=45.0.6",
     "dotenv>=0.9.9",

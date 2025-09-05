@@ -28,6 +28,11 @@ API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
+# --- Secret Command Configuration ---
+# Hashed version of the secret command for administrative actions.
+# This value should be generated using the 'utils/secret_hasher.py' script.
+HASHED_SECRET_COMMAND = os.getenv("HASHED_SECRET_COMMAND")
+
 # --- Critical Instagram Errors ---
 # These exceptions indicate a fundamental problem with the Instagram session.
 CRITICAL_INSTAGRAM_EXCEPTIONS = (
