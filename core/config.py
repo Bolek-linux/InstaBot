@@ -22,6 +22,7 @@ DATA_DIR = Path("data")
 # --- Configuration Files ---
 SESSION_FILE = DATA_DIR / "session.enc"
 CREDENTIALS_FILE = DATA_DIR / "credentials.enc"
+DATABASE_FILE = DATA_DIR / "app_database.db"
 
 # --- Telegram Credentials ---
 API_ID = os.getenv("TELEGRAM_API_ID")

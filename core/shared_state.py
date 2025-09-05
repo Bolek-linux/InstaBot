@@ -12,3 +12,7 @@ instagrapi_client: InstagrapiClient | None = None
 
 # Global dictionary for storing Instagram credentials in memory.
 ig_credentials: dict = {}
+
+# A set to store the user IDs of super-admins in memory.
+# This set is populated from the database on startup.
+super_admins: set[int] = set()

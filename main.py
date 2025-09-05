@@ -13,6 +13,7 @@ from core.logging_config import setup_logging
 # --- Local Imports ---
 from core.config import API_ID, API_HASH, BOT_TOKEN, DATA_DIR
 from core.instagram_handler import load_credentials, startup_login
+from core.database_handler import initialize_database, load_admins
 from telegram.bot import app
 
 
@@ -33,6 +34,11 @@ if __name__ == "__main__":
     # --- Ensure data Directory Exists ---
     # This guarantees that session and credential files have a place to be stored.
     DATA_DIR.mkdir(exist_ok=True)
+
+    # --- Database Initialization ---
+    # Initialize the database and load the list of admins into shared state.
+    initialize_database()
+    load_admins()
 
     # Verify that essential Telegram credentials are set.
     if not all([API_ID, API_HASH, BOT_TOKEN]):
